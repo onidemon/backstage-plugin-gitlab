@@ -18,12 +18,14 @@ import {
 } from '../../gitlabAppData';
 import gfm from 'remark-gfm';
 import toc from 'remark-toc';
-// @ts-ignore
 import removeComments from 'remark-remove-comments';
-
 import gemoji from 'remark-gemoji';
+import rehypePrism from 'rehype-prism';
+import rehypeRaw from 'rehype-raw';
+import 'prismjs/themes/prism.css';
 import { parseGitLabReadme } from '../../utils';
 
+// Custom styles for markdown-rendered elements to ensure consistent styling
 const useStyles = makeStyles((theme) => ({
     infoCard: {
         marginBottom: theme.spacing(3),
@@ -31,40 +33,214 @@ const useStyles = makeStyles((theme) => ({
             marginTop: theme.spacing(3),
         },
     },
-    // https://github.com/backstage/backstage/blob/master/packages/core-components/src/components/MarkdownContent/MarkdownContent.tsx#L28
     markdown: {
-        '& table': {
-            borderCollapse: 'collapse',
-            border: `1px solid ${theme.palette.border}`,
+        fontFamily:
+            '"Inter", "GitLab Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Ubuntu, Cantarell, "Helvetica Neue", sans-serif',
+        color: 'rgb(51, 50, 56)',
+        fontSize: '14px',
+        lineHeight: '1.5',
+        overflowWrap: 'break-word',
+
+        '& > *:not(:last-child)': {
+            marginBottom: theme.spacing(3),
         },
-        '& th, & td': {
-            border: `1px solid ${theme.palette.border}`,
-            padding: theme.spacing(1),
+
+        '& h1, & h2, & h3, & h4, & h5, & h6': {
+            margin: '24px 0 16px',
+            fontWeight: 600,
+            lineHeight: 1.25,
         },
-        '& td': {
-            wordBreak: 'break-word',
-            overflow: 'hidden',
-            verticalAlign: 'middle',
-            lineHeight: '1',
-            margin: 0,
-            padding: theme.spacing(3, 2, 3, 2.5),
-            borderBottom: 0,
+        '& h1': {
+            padding: '0.3em 0',
+            fontSize: '1.75em',
+            borderBottom: '1px solid #dbdbdb',
         },
-        '& th': {
-            backgroundColor: theme.palette.background.paper,
+        '& h2': {
+            padding: '0.3em 0',
+            fontSize: '1.5em',
+            borderBottom: '1px solid #dbdbdb',
         },
-        '& tr': {
-            backgroundColor: theme.palette.background.paper,
-        },
-        '& tr:nth-child(odd)': {
-            backgroundColor: theme.palette.background.default,
+        '& h3': { fontSize: '1.25em' },
+        '& h4': { fontSize: '1em' },
+
+        '& p': {
+            margin: '16px 0',
+            '&:first-child': { marginTop: 0 },
+            '&:last-child': { marginBottom: 0 },
         },
 
         '& a': {
-            color: theme.palette.link,
+            color: '#1068bf',
+            textDecoration: 'none',
+            '&:hover': {
+                textDecoration: 'underline',
+                color: '#1f75cb',
+            },
         },
+
+        '& ul, & ol': {
+            margin: '16px 0',
+            paddingLeft: '2em',
+            '& li': {
+                margin: '8px 0',
+                '& > p': { margin: '8px 0' },
+                '& > ul, & > ol': { margin: '8px 0' },
+            },
+        },
+
+        '& p > code, & li > code, & h1 > code, & h2 > code, & h3 > code': {
+            fontFamily:
+                '"GitLab Mono", "JetBrains Mono", "Menlo", "DejaVu Sans Mono", "Liberation Mono", "Consolas", "Ubuntu Mono", "Courier New", monospace',
+            fontSize: '90%',
+            color: '#1f1e24',
+            backgroundColor: '#ececef',
+            padding: '2px 4px',
+            borderRadius: '4px',
+            whiteSpace: 'pre-wrap',
+        },
+
+        '& pre': {
+            backgroundColor: '#fbfafd',
+            border: '1px solid #dcdcde',
+            borderRadius: '4px',
+            padding: theme.spacing(2),
+            overflowX: 'auto',
+            fontFamily:
+                '"GitLab Mono", "JetBrains Mono", "Menlo", "DejaVu Sans Mono", "Liberation Mono", "Consolas", "Ubuntu Mono", "Courier New", monospace',
+            fontSize: '.875rem',
+            color: '#333238',
+            lineHeight: '1.6em',
+            margin: 0,
+        },
+        '& pre code': {
+            fontSize: 'inherit',
+            color: 'inherit',
+            backgroundColor: 'transparent',
+            padding: 0,
+            margin: 0,
+            display: 'block',
+        },
+
+        '& table': {
+            width: '100%',
+            borderCollapse: 'collapse',
+            display: 'block',
+            overflowX: 'auto',
+            border: '1px solid rgb(220, 220, 222)',
+            marginBottom: theme.spacing(2),
+        },
+        '& th, & td': {
+            padding: theme.spacing(1),
+            border: '1px solid rgb(220, 220, 222)',
+            fontSize: '14px',
+        },
+        '& th': {
+            backgroundColor: '#f6f8fa',
+            fontWeight: 600,
+            borderBottom: '2px solid rgb(200, 200, 200)',
+        },
+
+        '& blockquote': {
+            fontSize: 'inherit',
+            color: '#535158',
+            paddingTop: theme.spacing(1),
+            paddingBottom: theme.spacing(1),
+            paddingLeft: theme.spacing(3),
+            boxShadow: 'inset 4px 0 0 0 #dcdcde',
+        },
+
+        '& hr': {
+            height: '1px',
+            margin: '24px 0',
+            backgroundColor: '#dbdbdb',
+            border: 0,
+        },
+
         '& img': {
             maxWidth: '100%',
+            backgroundColor: '#fff',
+            boxSizing: 'initial',
+        },
+
+        '& .task-list-item': {
+            listStyle: 'none',
+            marginLeft: '-1em',
+            '& input': { marginRight: '0.5em' },
+        },
+
+        '& dl': {
+            margin: '16px 0',
+            padding: 0,
+            '& dt': {
+                margin: '16px 0 8px',
+                fontSize: '1em',
+                fontStyle: 'italic',
+                fontWeight: 600,
+            },
+            '& dd': {
+                padding: '0 16px',
+                marginBottom: '16px',
+            },
+        },
+
+        '& kbd': {
+            display: 'inline-block',
+            padding: '3px 5px',
+            fontSize: '11px',
+            lineHeight: '10px',
+            color: '#444d56',
+            backgroundColor: '#fafbfc',
+            border: '1px solid #d1d5da',
+            borderRadius: '3px',
+            boxShadow: 'inset 0 -1px 0 #d1d5da',
+        },
+
+        '& .token.comment, & .token.prolog, & .token.doctype, & .token.cdata': {
+            color: '#998',
+            fontStyle: 'italic',
+        },
+        '& .token.function': { color: '#900' },
+        '& .token.keyword': { color: '#00f' },
+        '& .token.string': { color: '#690' },
+        '& .token.number': { color: '#905' },
+
+        '& .note': {
+            padding: '16px',
+            marginBottom: '16px',
+            borderRadius: '4px',
+            backgroundColor: '#ffefc6',
+            borderLeft: '4px solid #e67e22',
+        },
+        '& .alert': {
+            padding: '16px',
+            marginBottom: '16px',
+            borderRadius: '4px',
+            '&.alert-info': {
+                backgroundColor: '#f3f9fd',
+                borderLeft: '4px solid #428bca',
+            },
+            '&.alert-warning': {
+                backgroundColor: '#fcf8f2',
+                borderLeft: '4px solid #f0ad4e',
+            },
+            '&.alert-danger': {
+                backgroundColor: '#fdf7f7',
+                borderLeft: '4px solid #d9534f',
+            },
+        },
+        '& .badge': {
+            display: 'inline-block',
+            padding: '0.25em 0.4em',
+            fontSize: '75%',
+            fontWeight: 700,
+            lineHeight: 1,
+            textAlign: 'center',
+            verticalAlign: 'baseline',
+            borderRadius: '0.25rem',
+            '&.badge-primary': { backgroundColor: '#428bca', color: '#fff' },
+            '&.badge-success': { backgroundColor: '#5cb85c', color: '#fff' },
+            '&.badge-warning': { backgroundColor: '#f0ad4e', color: '#fff' },
+            '&.badge-danger': { backgroundColor: '#d9534f', color: '#fff' },
         },
     },
 }));
@@ -127,18 +303,19 @@ export const ReadmeCard = (props: Props) => {
             className={classes.infoCard}
             variant={props.variant}
         >
-            <ReactMarkdown
-                className={`${classes.markdown} ${
-                    props.markdownClasses ?? ''
-                }`.trim()}
-                remarkPlugins={[
-                    gfm,
-                    gemoji,
-                    [toc, { heading: '<!-- injected_toc -->' }], // tells remark-toc to look for toc injected by parseGitLabReadme
-                    removeComments, // removes HTML comments, including the one we injected
-                ]}
-                children={value?.readme ?? 'No README found'}
-            />
+            <div className={classes.markdown}>
+                <ReactMarkdown
+                    rehypePlugins={[rehypeRaw, rehypePrism]}
+                    remarkPlugins={[
+                        gfm,
+                        gemoji,
+                        [toc, { heading: '<!-- injected_toc -->' }],
+                        removeComments,
+                    ]}
+                >
+                    {value?.readme ?? 'No README found'}
+                </ReactMarkdown>
+            </div>
         </InfoCard>
     );
 };
